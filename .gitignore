@@ -1,0 +1,20 @@
+# --- Build Artifacts ---
+build/
+*.o
+*.bin
+*.iso
+*.map
+
+# --- IDE / Editor Files ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- System / OS Files ---
+.DS_Store
+Thumbs.db
+
+# --- Log Files ---
+*.log
