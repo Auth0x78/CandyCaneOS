@@ -35,7 +35,7 @@ extern void kernel_main(uint32_t mboot_magic, uint32_t *mboot_info_ptr_addr) {
   console_init(mboot_magic, mboot_info_ptr_addr);
 
   // Prints the flags of mbi
-  printLn("Multiboot info flags: {u4h}", mbi->flags);
+  printLn("Multiboot info flags: {u4b}", mbi->flags);
 
   /* Are mem_* valid? */
   if (CHECK_FLAG(mbi->flags, 0)) {
