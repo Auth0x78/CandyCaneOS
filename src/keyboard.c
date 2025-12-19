@@ -22,7 +22,7 @@ static uint8_t kbd_caps_released = 1;
 static uint8_t kbd_numlock_released = 1;
 
 // NOTE: Scan codes not mappable to ASCII are mapped to 0
-static const uint8_t scan_code_to_key[256] = {
+static const uint8_t scancode_to_key_low[256] = {
     // Row 1
     0,
     27,
@@ -82,6 +82,105 @@ static const uint8_t scan_code_to_key[256] = {
     ',',
     '.',
     '/',
+    0, // Right Shift
+    '*',
+    0,   // Left Alt
+    ' ', // Space bar
+    // Row 5
+    0,   // Caps Lock
+    0,   // F1
+    0,   // F2
+    0,   // F3
+    0,   // F4
+    0,   // F5
+    0,   // F6
+    0,   // F7
+    0,   // F8
+    0,   // F9
+    0,   // F10
+    0,   // Num Lock
+    0,   // Scroll Lock
+    0,   // Keypad 7
+    0,   // Keypad 8
+    0,   // Keypad 9
+    '-', // Keypad -
+    0,   // Keypad 4
+    0,   // Keypad 5
+    0,   // Keypad 6
+    '+', // Keypad +
+    0,   // Keypad 1
+    0,   // Keypad 2
+    0,   // Keypad 3
+    0,   // Keypad 0
+    '.', // Keypad . (0x53)
+    0,   // 0x54
+    0,   // 0x55
+    0,   // 0x56
+    0,   // F11
+    0,   // F12
+};
+
+// NOTE: Scan codes not mappable to ASCII are mapped to 0
+static const uint8_t scancode_to_key_high[256] = {
+    // Row 1
+    0,
+    27,
+    '!',
+    '@',
+    '#',
+    '$',
+    '%',
+    '^',
+    '&',
+    '*', // 0x00 - 0x09
+    '(',
+    ')',
+    '_',
+    '+',
+    '\b', // Backspace
+    '\t', // Tab
+
+    // Row 2
+    'Q',
+    'W',
+    'E',
+    'R',
+    'T',
+    'Y',
+    'U',
+    'I',
+    'O',
+    'P',
+    '{',
+    '}',
+    '\n', // Enter key
+    0,    // Left Control key
+    // Row 3
+    'A',
+    'S',
+    'D',
+    'F',
+    'G',
+    'H',
+    'J',
+    'K',
+    'L',
+    ':',
+    '\"',
+    '~',
+    0, // Left Shift
+    '|',
+    // Row 4
+    'Z',
+    'X',
+    'C',
+    'V',
+    'B',
+    'N',
+    'M',
+    '<',
+    '>',
+    '?',
     0, // Right Shift
     '*',
     0,   // Left Alt
@@ -224,41 +323,41 @@ void keyboard_handler() {
   }
 
 send_eoi:
-#ifdef KBD_DBG_PRINT
-  uint16_t oldX = 0, oldY = 0;
-
-  setColorMode(0x0E);
-  getCursorPosition(&oldX, &oldY);
-  print("{u1h} ", scan_code);
-
-  if (scan_code == 0x0E) {
-    // Remove the backspace character and the space before it
-    // Then after that will remove the previously printed character
-    putBackspace();
-    putBackspace();
-    putBackspace();
-    putBackspace();
-  }
-
-  print("{u1b} ", specialKeys);
-
-  setColorMode(0x0F);
-  // setCursorPosition(oldX, oldY);
-#endif
   PIC_SendEOI(1);
 }
 
 // Private helper functions
 static void handle_asciiKey(uint8_t scancode) {
 
+  const uint8_t *scan2ascii =
+      specialKeys & KDB_KEY_ASHIFT ? scancode_to_key_high : scancode_to_key_low;
+
   // Key release event
   if (scancode > 0x80) {
-    uint8_t key = scan_code_to_key[scancode - 0x80];
+    uint8_t key = scan2ascii[scancode - 0x80];
     key_state[key] = 0x0;
     return;
   }
 
   // Key is pressed
-  uint8_t key = scan_code_to_key[scancode];
+  uint8_t key = scan2ascii[scancode];
   key_state[key] = 0x1;
+
+#ifdef KBD_DBG_PRINT
+  uint16_t oldX = 0, oldY = 0;
+
+  setColorMode(0x0E);
+  getCursorPosition(&oldX, &oldY);
+  print("{c}", key);
+
+  if (scancode == 0x0E) {
+    // Remove the backspace character and the space before it
+    // Then after that will remove the previously printed character
+    putBackspace();
+    putBackspace();
+  }
+
+  setColorMode(0x0F);
+  // setCursorPosition(oldX, oldY);
+#endif
 }

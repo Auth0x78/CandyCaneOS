@@ -52,10 +52,18 @@ void putc(char c) {
     VGA_MEMORY[VGA_OFFSET(cursor_x, cursor_y)] =
         (uint16_t)c | (default_color_mode << 8);
 
-    cursor_y += (cursor_x + 1) == VGA_WIDTH ? 1 : 0;
+    cursor_x += 1;
+    cursor_y += cursor_x == VGA_WIDTH ? 1 : 0;
     cursor_y %= VGA_HEIGHT;
-    cursor_x = (cursor_x + 1) % VGA_WIDTH;
+    cursor_x %= VGA_WIDTH;
   }
+}
+
+void putcAt(char c, uint16_t x, uint16_t y, uint8_t colorMode) {
+  if (c == '\n') {
+    return;
+  }
+  VGA_MEMORY[VGA_OFFSET(x, y)] = (uint16_t)c | (colorMode << 8);
 }
 
 // Prints a string until null terminator (unsafe)

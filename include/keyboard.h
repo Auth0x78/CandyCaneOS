@@ -12,6 +12,7 @@
 typedef enum {
   KBD_KEY_LSHIFT = 0x01,
   KBD_KEY_RSHIFT = 0x02,
+#define KDB_KEY_ASHIFT 0x03
   KBD_KEY_CTRL = 0x04,
   KBD_KEY_ALT = 0x08,
   KBD_KEY_CAPSLOCK = 0x10,

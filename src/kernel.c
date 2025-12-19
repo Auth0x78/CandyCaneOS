@@ -1,11 +1,13 @@
 #include <stdint.h>
 
 #include "PIC.h"
+#include "house.h"
 #include "idt.h"
 #include "io.h"
 #include "keyboard.h"
 #include "multiboot.h"
 #include "print.h"
+#include "renderer.h"
 
 // MACROS
 /* Check if the bit BIT in FLAGS is set. */
@@ -54,6 +56,13 @@ extern void kernel_main(uint32_t mboot_magic, uint32_t *mboot_info_ptr_addr) {
 
   // Enable interrupts
   asm volatile("sti");
+
+  // The actual sprite
+  sprite_t houseSprite = {
+      .posX = 0, .posY = 10, .color = 0x0F, .data = houseData};
+
+  // Draw house sprite
+  drawSprite(&houseSprite);
 
   while (1) {
     asm volatile("hlt");

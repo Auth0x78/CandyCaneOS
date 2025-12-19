@@ -21,8 +21,11 @@ void setColorMode(uint8_t colorMode);
 // Get current color
 uint8_t getColorMode();
 
-// Prints a character at current cursor position with given color mode
+// Prints a character at current cursor position with set color mode
 void putc(char c);
+
+// Prints a character at given position with given color mode
+void putcAt(char c, uint16_t x, uint16_t y, uint8_t colorMode);
 
 // Prints a string until null terminator (unsafe)
 uint32_t puts(const char *str);
