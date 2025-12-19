@@ -1,11 +1,29 @@
 ; boot.asm - Multiboot-compliant bootloader for 32-bit mode
 
+; Define Macros
+%define MULTIBOOT_MAGIC  0x1BADB002
+%define MULTIBOOT_FLAGS  0x00000007
+%define MULTIBOOT_ZERO   0x00000000
+
 section .multiboot
 align 4
     ; Multiboot header
-    dd 0x1BADB002                ; Magic number
-    dd 0x00000003                ; Flags: align modules on page boundaries and provide memory map
-    dd -(0x1BADB002+0x00000003)  ; Checksum
+    dd MULTIBOOT_MAGIC                      ; Magic number
+    dd MULTIBOOT_FLAGS                      ; Flags: align modules on page boundaries and provide memory map
+    dd -(MULTIBOOT_MAGIC+MULTIBOOT_FLAGS)   ; Checksum
+    
+    ; Only valid if flag[16] is set 
+    dd MULTIBOOT_ZERO                ; header_addr
+    dd MULTIBOOT_ZERO                ; load_addr
+    dd MULTIBOOT_ZERO                ; load_end_addr
+    dd MULTIBOOT_ZERO                ; bss_end_addr
+    dd MULTIBOOT_ZERO                ; entry_addr
+
+    ; Only valid if flag[2] is set (VIDEO MODE)
+    dd 0x00000001                     ; mode_type    
+    dd MULTIBOOT_ZERO                 ; width
+    dd MULTIBOOT_ZERO                 ; height
+    dd MULTIBOOT_ZERO                 ; depth
 
 section .data
 align 4
@@ -65,7 +83,7 @@ reload_segments:
     cli
     
     ; Call the kernel main function
-    push mboot_info_ptr          ; Pass multiboot info pointer to kernel
+    push [mboot_info_ptr]       ; Pass multiboot info pointer to kernel
     
     mov eax, [mboot_magic_number]
     push eax                    ; Pass the magic number to kernel main
