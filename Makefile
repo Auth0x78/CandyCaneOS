@@ -10,6 +10,9 @@ CC         := gcc
 ASM        := nasm
 LD         := ld
 
+# --- GDB Init file --- 
+GDB_INIT := .gdbinit
+
 # --- Base Compilation Flags ---
 # We removed -O2 from here to set it per-mode
 BASE_CC_FLAGS := -std=gnu2x -m32 -ffreestanding -fno-stack-protector \
@@ -22,7 +25,7 @@ MODE ?= release
 
 ifeq ($(MODE), debug)
     BUILD_DIR := $(BUILD_ROOT)/debug
-    CC_FLAGS  := $(BASE_CC_FLAGS) -O0 -g
+    CC_FLAGS  := $(BASE_CC_FLAGS) -O0 -ggdb3
     QEMU_FLAGS := -s -S
     MSG       := "DEBUG MODE"
 else
@@ -91,8 +94,7 @@ debug:
 	@echo "[*] Launching QEMU and GDB..."
 	@qemu-system-i386 -cdrom $(BUILD_ROOT)/debug/$(ISO_NAME) -s -S & \
 	sleep 1 && \
-	gdb -ex "target remote localhost:1234" -ex "symbol-file $(BUILD_ROOT)/debug/kernel.bin"
-
+	gdb -x $(GDB_INIT)
 clean:
 	@echo "[*] Cleaning all builds"
 	@rm -rf $(BUILD_ROOT)
