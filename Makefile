@@ -2,9 +2,7 @@
 OS_NAME    := Candycane OS
 SRC_DIR    := src
 INC_DIR    := include
-BUILD_DIR  := build
-ISO_SUBDIR := $(BUILD_DIR)/iso
-ISO_NAME   := CandyCane.iso
+BUILD_ROOT := build
 LD_FILE    := linker.ld
 
 # --- Toolchain ---
@@ -12,32 +10,50 @@ CC         := gcc
 ASM        := nasm
 LD         := ld
 
-# --- Compilation Flags ---
-CC_FLAGS   := -std=gnu2x -m32 -ffreestanding -fno-stack-protector \
-              -fno-pie -fno-pic -nostdlib -nostartfiles -O2 -I$(INC_DIR) -Wall -Wextra
-LD_FLAGS   := -m elf_i386 -T $(LD_FILE) -z noexecstack
+# --- Base Compilation Flags ---
+# We removed -O2 from here to set it per-mode
+BASE_CC_FLAGS := -std=gnu2x -m32 -ffreestanding -fno-stack-protector \
+                 -fno-pie -fno-pic -nostdlib -nostartfiles -I$(INC_DIR) -Wall -Wextra
+LD_FLAGS      := -m elf_i386 -T $(LD_FILE) -z noexecstack
+
+# --- Mode Switching Logic ---
+# Default to release if no mode specified
+MODE ?= release
+
+ifeq ($(MODE), debug)
+    BUILD_DIR := $(BUILD_ROOT)/debug
+    CC_FLAGS  := $(BASE_CC_FLAGS) -O0 -g
+    QEMU_FLAGS := -s -S
+    MSG       := "DEBUG MODE"
+else
+    BUILD_DIR := $(BUILD_ROOT)/release
+    CC_FLAGS  := $(BASE_CC_FLAGS) -O2
+    QEMU_FLAGS := 
+    MSG       := "RELEASE MODE"
+endif
 
 # --- Files Discovery ---
 C_SRCS     := $(notdir $(wildcard $(SRC_DIR)/*.c))
 ASM_SRCS   := $(notdir $(wildcard $(SRC_DIR)/*.asm))
-
-# Create the object list: build/file.o
 OBJS       := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.o))
 OBJS       += $(addprefix $(BUILD_DIR)/, $(ASM_SRCS:.asm=.o))
 
 # --- ISO Paths ---
-FINAL_ISO  := $(ISO_SUBDIR)/$(ISO_NAME)
-TEMP_ISO   := $(BUILD_DIR)/tmp_$(ISO_NAME)
+ISO_SUBDIR := $(BUILD_DIR)/iso_root
+ISO_NAME   := CandyCane.iso
+FINAL_ISO  := $(BUILD_DIR)/$(ISO_NAME)
 
 # --- Build Rules ---
 
-.PHONY: all clean run iso
+.PHONY: all clean run iso debug
 
-all: $(BUILD_DIR)/kernel.bin iso
+all: 
+	@echo "[*] Building in $(MSG)"
+	@$(MAKE) $(FINAL_ISO) MODE=$(MODE)
 
 # Link the kernel
 $(BUILD_DIR)/kernel.bin: $(OBJS)
-	@echo "[*] Linking kernel"
+	@echo "[*] Linking kernel ($@)"
 	@$(LD) $(LD_FLAGS) -o $@ $(OBJS)
 
 # Rule for C files
@@ -50,13 +66,10 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm
 	@mkdir -p $(BUILD_DIR)
 	@echo "    ASM $<"
-	@$(ASM) -f elf32 $< -o $@
+	@$(ASM) -f elf32 -g $< -o $@
 
-# Create ISO: Source is build/iso, Temp output in build/, Final move to build/iso/
-iso: $(FINAL_ISO)
-
+# Create ISO
 $(FINAL_ISO): $(BUILD_DIR)/kernel.bin
-	@echo "[*] Preparing ISO source directory structure"
 	@mkdir -p $(ISO_SUBDIR)/boot/grub
 	@cp $(BUILD_DIR)/kernel.bin $(ISO_SUBDIR)/boot/
 	@echo 'set timeout=0' > $(ISO_SUBDIR)/boot/grub/grub.cfg
@@ -65,17 +78,21 @@ $(FINAL_ISO): $(BUILD_DIR)/kernel.bin
 	@echo '    multiboot /boot/kernel.bin' >> $(ISO_SUBDIR)/boot/grub/grub.cfg
 	@echo '    boot' >> $(ISO_SUBDIR)/boot/grub/grub.cfg
 	@echo '}' >> $(ISO_SUBDIR)/boot/grub/grub.cfg
-	@echo "[*] Creating temporary ISO: $(TEMP_ISO)"
-	@grub-mkrescue -o $(TEMP_ISO) $(ISO_SUBDIR)
-	@echo "[*] Moving final ISO to: $@"
-	@mv $(TEMP_ISO) $@
+	@grub-mkrescue -o $@ $(ISO_SUBDIR) 2>/dev/null
 
-# Run in QEMU
-run: iso
-	@echo "[*] Running in QEMU"
-	@qemu-system-i386 -cdrom $(FINAL_ISO)
+# Standard Run
+run: all
+	@echo "[*] Running QEMU ($(MODE))"
+	@qemu-system-i386 -cdrom $(FINAL_ISO) $(QEMU_FLAGS)
 
-# Cleanup
+# Integrated Debug Target
+debug:
+	@$(MAKE) MODE=debug all
+	@echo "[*] Launching QEMU and GDB..."
+	@qemu-system-i386 -cdrom $(BUILD_ROOT)/debug/$(ISO_NAME) -s -S & \
+	sleep 1 && \
+	gdb -ex "target remote localhost:1234" -ex "symbol-file $(BUILD_ROOT)/debug/kernel.bin"
+
 clean:
-	@echo "[*] Cleaning build directory"
-	@rm -rf $(BUILD_DIR)
+	@echo "[*] Cleaning all builds"
+	@rm -rf $(BUILD_ROOT)

@@ -12,6 +12,9 @@ build/
 *.swo
 *~
 
+# --- GDB Init File ---
+.gdbinit
+
 # --- System / OS Files ---
 .DS_Store
 Thumbs.db
