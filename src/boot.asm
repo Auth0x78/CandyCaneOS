@@ -20,10 +20,10 @@ align 4
     dd MULTIBOOT_ZERO                ; entry_addr
 
     ; Only valid if flag[2] is set (VIDEO MODE)
-    dd 0x00000001                     ; mode_type    
-    dd MULTIBOOT_ZERO                 ; width
-    dd MULTIBOOT_ZERO                 ; height
-    dd MULTIBOOT_ZERO                 ; depth
+    dd 0x00000000                     ; mode_type    
+    dd 800                            ; width
+    dd 600                            ; height
+    dd 32                             ; depth
 
 section .data
 align 4
@@ -82,6 +82,21 @@ reload_segments:
     ; Disable interrupts
     cli
     
+    ; Enable SSE execution
+        ; --- CR0 Setup ---
+        mov eax, cr0
+        and ax, 0xFFFB      ; Clear CR0.EM (bit 2)
+        or ax, 0x2          ; Set CR0.MP (bit 1)
+        mov cr0, eax
+
+        ; --- CR4 Setup ---
+        mov eax, cr4
+        or ax, (3 << 9)     ; Set CR4.OSFXSR (bit 9) and CR4.OSXMMEXCPT (bit 10)
+        mov cr4, eax
+    
+    ; Reset FPU
+    fninit
+
     ; Call the kernel main function
     push [mboot_info_ptr]       ; Pass multiboot info pointer to kernel
     

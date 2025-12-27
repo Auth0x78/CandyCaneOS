@@ -1,31 +1,25 @@
 #ifndef PRINT_H
 #define PRINT_H
 
+#include "video.h"
+#include <stdarg.h>
 #include <stdint.h>
 
-// MACRO defines
-#define VGA_WIDTH 80
-#define VGA_HEIGHT 25
-#define VGA_BUFFER_SIZE (VGA_WIDTH * VGA_HEIGHT)
-#define VGA_OFFSET(X, Y) (Y * VGA_WIDTH + X)
-
 // Initalizer printer
-void print_init(uint16_t cursorX, uint16_t cursorY, uint8_t colorMode);
-
-// Clear screen from (startX, startY) to end with given color mode
-void cls(uint16_t startX, uint16_t startY);
+void print_init(uint16_t screen_width, uint16_t screen_height,
+                uint8_t font_width, uint8_t font_height, color_t colorMode);
 
 // Set color mode of screen
-void setColorMode(uint8_t colorMode);
+void setColorMode(color_t colorMode);
 
 // Get current color
-uint8_t getColorMode();
+color_t getColorMode();
 
 // Prints a character at current cursor position with set color mode
 void putc(char c);
 
 // Prints a character at given position with given color mode
-void putcAt(char c, uint16_t x, uint16_t y, uint8_t colorMode);
+void putcAt(char c, uint16_t x, uint16_t y, color_t colorMode);
 
 // Prints a string until null terminator (unsafe)
 uint32_t puts(const char *str);

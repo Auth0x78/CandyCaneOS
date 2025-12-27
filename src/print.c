@@ -1,69 +1,88 @@
 #include "print.h"
-#include <stdarg.h>
 
-// VGA text mode memory start
-static volatile uint16_t *const VGA_MEMORY = (uint16_t *)0xB8000;
+// Screen size (in char)
+static uint16_t max_char_x = 0;
+static uint16_t max_char_y = 0;
 
-// Current cursor offset in VGA memory
+// NOTE: Screen coordinates and char coordinates are different
+// Current character coordinates of cursor
 static uint16_t cursor_x = 0;
 static uint16_t cursor_y = 0;
 
+// Font resolution used
+static uint8_t font_size_x = 0;
+static uint8_t font_size_y = 0;
+
 // Current color of the text
-static uint8_t default_color_mode = 0x0F;
+static color_t default_color_mode = COLOR(0xFF, 0xFF, 0xFF);
+static color_t background_color = COLOR_BLACK;
 
 // Helper function declaration
 static int16_t print_int(uint32_t value, uint8_t base, bool signed_type,
                          uint8_t bytes);
 
 // Initalizes the printer
-void print_init(uint16_t cursorX, uint16_t cursorY, uint8_t colorMode) {
-  cursor_x = cursorX;
-  cursor_y = cursorY;
+void print_init(uint16_t screen_width, uint16_t screen_height,
+                uint8_t font_width, uint8_t font_height, color_t colorMode) {
+  cursor_x = 0;
+  cursor_y = 0;
+
+  // Font resolution
+  font_size_x = font_width;
+  font_size_y = font_height;
+
+  // Max characters per axis
+  max_char_x = screen_width / font_width;
+  max_char_y = screen_height / font_height;
+
+  // Set default color of print
   default_color_mode = colorMode;
 
   // Also clear screen for printing
-  cls(cursor_x, cursor_y);
-}
-
-// Clear screen from (startX, startY) to end with given color mode
-void cls(uint16_t startX, uint16_t startY) {
-  for (uint16_t row = startY; row < VGA_HEIGHT; ++row) {
-    for (uint16_t col = startX; col < VGA_WIDTH; ++col) {
-      VGA_MEMORY[VGA_OFFSET(col, row)] =
-          (uint16_t)' ' | (default_color_mode << 8);
-    }
-  }
-  cursor_x = startX;
-  cursor_y = startY;
+  background_color = COLOR_BLACK;
+  clear_screen(background_color);
 }
 
 // Set color mode of screen
-void setColorMode(uint8_t colorMode) { default_color_mode = colorMode; }
+void setColorMode(color_t colorMode) { default_color_mode = colorMode; }
 
 // Get current color
-uint8_t getColorMode() { return default_color_mode; }
+color_t getColorMode() { return default_color_mode; }
 
 // Prints a character at current cursor position with given color mode
 void putc(char c) {
   if (c == '\n') {
-    cursor_y = (cursor_y + 1) % VGA_HEIGHT;
     cursor_x = 0;
-  } else {
-    VGA_MEMORY[VGA_OFFSET(cursor_x, cursor_y)] =
-        (uint16_t)c | (default_color_mode << 8);
+    cursor_y += 1;
+    // Wrap around logic
+    cursor_y %= max_char_y;
 
+  } else {
+    color_t font_color = (c == ' ') ? background_color : default_color_mode;
+
+    video_draw_char(c, cursor_x * font_size_x, cursor_y * font_size_y,
+                    font_color);
+
+    // Increment x and y
     cursor_x += 1;
-    cursor_y += cursor_x == VGA_WIDTH ? 1 : 0;
-    cursor_y %= VGA_HEIGHT;
-    cursor_x %= VGA_WIDTH;
+    // Auto new line logic, when cursor_x goes beyond screen_width
+    cursor_y += (cursor_x >= max_char_x);
+
+    // Handle cursor wrap around logic
+    cursor_y %= max_char_y;
+    cursor_x %= max_char_x;
   }
 }
 
-void putcAt(char c, uint16_t x, uint16_t y, uint8_t colorMode) {
+void putcAt(char c, uint16_t x, uint16_t y, color_t colorMode) {
   if (c == '\n') {
     return;
+  } else if (c == ' ') {
+    video_clear_char(x * font_size_x, y * font_size_y, colorMode);
+    return;
   }
-  VGA_MEMORY[VGA_OFFSET(x, y)] = (uint16_t)c | (colorMode << 8);
+
+  video_draw_char(c, x * font_size_x, y * font_size_y, colorMode);
 }
 
 // Prints a string until null terminator (unsafe)
@@ -73,15 +92,21 @@ uint32_t puts(const char *str) {
     char c = *(str + cnt++);
 
     if (c == '\n') {
-      cursor_y = (cursor_y + 1) % VGA_HEIGHT;
+      cursor_y = (cursor_y + 1) % max_char_y;
       cursor_x = 0;
     } else {
-      VGA_MEMORY[VGA_OFFSET(cursor_x, cursor_y)] =
-          (uint16_t)c | (default_color_mode << 8);
+      color_t font_color = (c == ' ') ? background_color : default_color_mode;
+      video_draw_char(c, cursor_x * font_size_x, cursor_y * font_size_y,
+                      font_color);
 
-      cursor_y += (cursor_x + 1) == VGA_WIDTH ? 1 : 0;
-      cursor_y %= VGA_HEIGHT;
-      cursor_x = (cursor_x + 1) % VGA_WIDTH;
+      // Increment x and y
+      cursor_x += 1;
+      // Auto new line logic, when cursor_x goes beyond screen_width
+      cursor_y += (cursor_x >= max_char_x);
+
+      // Handle cursor wrap around logic
+      cursor_y %= max_char_y;
+      cursor_x %= max_char_x;
     }
   }
 
@@ -285,13 +310,13 @@ void putBackspace() {
 
   if (cursor_x == 0) {
     cursor_y--;
-    cursor_x = VGA_WIDTH - 1;
+    cursor_x = max_char_x - 1;
   } else {
     cursor_x--;
   }
 
-  VGA_MEMORY[VGA_OFFSET(cursor_x, cursor_y)] =
-      (uint16_t)' ' | (0xf << 8); // Clear with default color
+  video_clear_char(cursor_x * font_size_x, cursor_y * font_size_y,
+                   background_color);
 }
 
 // Get current cursor position (unsafe)
@@ -304,14 +329,14 @@ void getCursorPosition(uint16_t *outX, uint16_t *outY) {
 // Get console size (unsafe)
 // TODO: Avoid taking pointers, instead return a struct
 void getConsoleSize(uint16_t *vgaX, uint16_t *vgaY) {
-  *vgaX = VGA_WIDTH;
-  *vgaY = VGA_HEIGHT;
+  *vgaX = max_char_x;
+  *vgaY = max_char_y;
 }
 
 // Set cursor position
 // Returns: 0 = success, -1 = out of bounds
 int8_t setCursorPosition(uint16_t newX, uint16_t newY) {
-  if (newX >= VGA_WIDTH || newY >= VGA_HEIGHT)
+  if (newX >= max_char_x || newY >= max_char_y)
     return -1;
 
   cursor_x = newX;

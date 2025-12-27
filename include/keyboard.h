@@ -5,7 +5,6 @@
 
 #define KBD_DATA_PORT 0x60
 #define KBD_STATUS_PORT 0x64
-#define KBD_INT_VECTOR 0x21
 
 #define KBD_CMD_SET_LEDS 0xED
 

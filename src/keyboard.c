@@ -1,5 +1,6 @@
 #include "keyboard.h"
 #include "PIC.h"
+#include "common_intr.h"
 #include "idt.h"
 #include "io.h"
 
@@ -7,9 +8,6 @@
 #ifdef KBD_DBG_PRINT
 #include "print.h"
 #endif
-
-// External ASM ISR handler for keyboard interrupts
-extern void keyboard_isr();
 
 // Current key pressed state
 volatile uint8_t key_state[256] = {0};
@@ -225,7 +223,7 @@ static void handle_asciiKey(uint8_t scancode);
 // Public API
 void keyboard_init() {
   // Setup keyboard interrupts
-  idt_set_gate(KBD_INT_VECTOR, (uint32_t)keyboard_isr);
+  idt_set_gate(KBD_INT_VECTOR, (uint32_t)isr_keyboard);
 
   // Enable keyboard IRQ in PIC
   PIC_ClearMask(1);
@@ -346,7 +344,7 @@ static void handle_asciiKey(uint8_t scancode) {
 #ifdef KBD_DBG_PRINT
   uint16_t oldX = 0, oldY = 0;
 
-  setColorMode(0x0E);
+  setColorMode(COLOR(0xEE, 0xDC, 0x5B));
   getCursorPosition(&oldX, &oldY);
   print("{c}", key);
 
@@ -357,7 +355,7 @@ static void handle_asciiKey(uint8_t scancode) {
     putBackspace();
   }
 
-  setColorMode(0x0F);
+  setColorMode(COLOR_WHITE);
   // setCursorPosition(oldX, oldY);
 #endif
 }
