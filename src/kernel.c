@@ -82,11 +82,11 @@ extern void kernel_main(uint32_t mboot_magic, uint32_t *mboot_info_ptr_addr) {
   print_info(mboot_magic, mboot_info_ptr_addr);
 
   // Prints the flags of mbi
-  printLn("Multiboot info flags: {u4b}", mbi->flags);
+  println("Multiboot info flags: {u4b}", mbi->flags);
 
   /* Are mem_* valid? */
   if (CHECK_FLAG(mbi->flags, 0)) {
-    printLn("Mem_lower:Mem_upper is {u4h}:{u4h}", mbi->mem_lower,
+    println("Mem_lower:Mem_upper is {u4h}:{u4h}", mbi->mem_lower,
             mbi->mem_upper);
   }
 
@@ -129,13 +129,13 @@ void print_info(uint32_t mboot_magic, uint32_t *mboot_info_ptr_addr) {
   setColorMode(COLOR(255, 255, 255));
 
   // Print the magic number and multiboot info address
-  printLn(
+  println(
       "Multiboot Magic Number: {u4h}    Multiboot Info Struct Address: {u4h}",
       mboot_magic, (uint32_t)mboot_info_ptr_addr);
 
-  printLn("Kernel end address: {u4h}", (uint32_t)__kernel_end);
+  println("Kernel end address: {u4h}", (uint32_t)__kernel_end);
 
-  printLn("Kernel memory used: {u4h}", ((uint32_t)__kernel_end) - 0x100000);
+  println("Kernel memory used: {u4h}", ((uint32_t)__kernel_end) - 0x100000);
 
-  printLn("Free memory start address: {u4h}", (uint32_t)__free_mem_aligned);
+  println("Free memory start address: {u4h}", (uint32_t)__free_mem_aligned);
 }

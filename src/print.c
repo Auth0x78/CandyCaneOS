@@ -205,7 +205,7 @@ int32_t print(const char *fmt, ...) {
   return cnt;
 }
 
-int32_t printLn(const char *fmt, ...) {
+int32_t println(const char *fmt, ...) {
   uint32_t cnt = 0;
   va_list apList;
   va_start(apList, fmt);

@@ -40,7 +40,7 @@ uint32_t puts(const char *str);
 int32_t print(const char *fmt, ...);
 
 // Formated print function with new line ending
-int32_t printLn(const char *fmt, ...);
+int32_t println(const char *fmt, ...);
 
 // Print backspace at current cursor position
 void putBackspace();
