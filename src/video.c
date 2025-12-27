@@ -144,14 +144,26 @@ void video_draw_char(char c, uint16_t x, uint16_t y, color_t color) {
 
     for (int i = 0; i < 8; i++) {
       uint8_t row = glyph[i];
-      dest[0] = ((row >> 0) & 1) * packed_col;
-      dest[1] = ((row >> 1) & 1) * packed_col;
-      dest[2] = ((row >> 2) & 1) * packed_col;
-      dest[3] = ((row >> 3) & 1) * packed_col;
-      dest[4] = ((row >> 4) & 1) * packed_col;
-      dest[5] = ((row >> 5) & 1) * packed_col;
-      dest[6] = ((row >> 6) & 1) * packed_col;
-      dest[7] = ((row >> 7) & 1) * packed_col;
+
+      // Calculate current pixel to set or not
+      if ((row >> 0) & 1)
+        dest[0] = packed_col;
+      if ((row >> 1) & 1)
+        dest[1] = packed_col;
+      if ((row >> 2) & 1)
+        dest[2] = packed_col;
+      if ((row >> 3) & 1)
+        dest[3] = packed_col;
+      if ((row >> 4) & 1)
+        dest[4] = packed_col;
+      if ((row >> 5) & 1)
+        dest[5] = packed_col;
+      if ((row >> 6) & 1)
+        dest[6] = packed_col;
+      if ((row >> 7) & 1)
+        dest[7] = packed_col;
+
+      // Add stride to go to next row
       dest += stride;
     }
     break;
@@ -174,14 +186,24 @@ void video_draw_char(char c, uint16_t x, uint16_t y, color_t color) {
 
     for (int i = 0; i < 8; i++) {
       uint8_t row = glyph[i];
-      dest[0] = ((row >> 0) & 1) * col;
-      dest[1] = ((row >> 1) & 1) * col;
-      dest[2] = ((row >> 2) & 1) * col;
-      dest[3] = ((row >> 3) & 1) * col;
-      dest[4] = ((row >> 4) & 1) * col;
-      dest[5] = ((row >> 5) & 1) * col;
-      dest[6] = ((row >> 6) & 1) * col;
-      dest[7] = ((row >> 7) & 1) * col;
+      if ((row >> 0) & 1)
+        dest[0] = col;
+      if ((row >> 1) & 1)
+        dest[1] = col;
+      if ((row >> 2) & 1)
+        dest[2] = col;
+      if ((row >> 3) & 1)
+        dest[3] = col;
+      if ((row >> 4) & 1)
+        dest[4] = col;
+      if ((row >> 5) & 1)
+        dest[5] = col;
+      if ((row >> 6) & 1)
+        dest[6] = col;
+      if ((row >> 7) & 1)
+        dest[7] = col;
+
+      // Go to next row
       dest += stride;
     }
     break;
@@ -196,9 +218,11 @@ void video_draw_char(char c, uint16_t x, uint16_t y, color_t color) {
       for (int col = 0; col < 8; col++) {
         uint8_t mask = (row >> col) & 1;
 
-        dest[col * 3 + 0] = mask * color.b;
-        dest[col * 3 + 1] = mask * color.g;
-        dest[col * 3 + 2] = mask * color.r;
+        if (mask) {
+          dest[col * 3 + 0] = color.b;
+          dest[col * 3 + 1] = color.g;
+          dest[col * 3 + 2] = color.r;
+        }
       }
       dest += framebuffer_info.pitch;
     }
