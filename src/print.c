@@ -43,6 +43,19 @@ void print_init(uint16_t screen_width, uint16_t screen_height,
   clear_screen(background_color);
 }
 
+// Clears the print window
+void print_clear(color_t text_color, color_t bg_color) {
+  background_color = bg_color;
+  text_color = bg_color;
+
+  // Dispatch call to video library to clear screen
+  clear_screen(bg_color);
+
+  // Reset cursor position
+  cursor_x = 0;
+  cursor_y = 0;
+}
+
 // Set color mode of screen
 void setColorMode(color_t colorMode) { default_color_mode = colorMode; }
 

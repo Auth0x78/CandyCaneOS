@@ -9,6 +9,9 @@
 void print_init(uint16_t screen_width, uint16_t screen_height,
                 uint8_t font_width, uint8_t font_height, color_t colorMode);
 
+// Clears the print window
+void print_clear(color_t text_color, color_t bg_color);
+
 // Set color mode of screen
 void setColorMode(color_t colorMode);
 
@@ -30,10 +33,12 @@ uint32_t puts(const char *str);
  *      Number:
  *              u<size>[h/b] => Unsigned <size> bytes
  *              i<size>[h/b] => Signed <size> bytes
- *      NOTE: Allowed sizes are 1, 2 and 4, Prefix can be h (hex) or b (bin)
- *      Character: c
- *      String: s[<len>], Length optional when null terminated
- *  To print '{' you can escape using '{', for '}' you can escape using '}'
+ *      NOTE: Allowed sizes are 1, 2 and 4, postfix(h/b) can be used to specify
+ *            number formatting h => (hex) or b (bin)
+ *  Character: c,
+ *  String: s[<len>],
+ *      Length optional, when null terminated to print '{' you can escape using
+ *      '{', for '}' you can escape using '}'
  */
 
 // Formated print function with no new line
